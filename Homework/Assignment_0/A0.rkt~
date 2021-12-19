@@ -1,5 +1,5 @@
 #lang racket
-;Pavani Ravella HW 0
+
 (provide fact)
 
 ; recursive factorial procedure
