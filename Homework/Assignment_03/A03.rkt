@@ -60,19 +60,42 @@
        ]
       )))
 
-(define reflexive?
-  (lambda (a)
-    (nyi)))
-
-(define multi-set?
-  (lambda (a)
+(define range
+  (lambda (r)
     (cond
-      [(null? a) #t]
-      
-      [else
-       (and (list? a)(list? (first a)) (multi-set? (rest a)))
-       ]
-      )))
+      [(null? r) '()]
+      [(member (cadar r) (range (cdr r)))
+       (range (cdr r))]
+      [else (cons (cadar r) (range (cdr r)))])))
+
+
+
+(define domain-range
+  (lambda (r)
+    (union (domain r) (range r))))
+
+
+(define union
+  (lambda (s1 s2)
+    (cond
+      [(null? s1) s2]
+      [(member (car s1) s2) (union (cdr s1) s2)]
+      [else (union (cdr s1) (cons (car s1) s2))])))
+(define check
+  (lambda (ls r)
+    (cond
+      [(null? ls) #t]
+      [(not (member (list (car ls) (car ls)) r)) #f]
+      [else (check (cdr ls) r)])))
+
+
+
+(define reflexive?
+  (lambda (r)
+    (cond
+      [(null? r) #t]
+      [else (check (domain-range r) r)])))
+
 
 (define ms-size
   (lambda (a)
@@ -94,6 +117,18 @@
       [(cons (first a) (all-but-last (rest a)))]
 
       )))
+
+(define multi-set?
+  (lambda (obj)
+    (if(relation? obj)
+       (if(member #f (map format? obj))
+          #f
+          (set? (map car obj)))
+       #f)))
+
+(define format? 
+  (lambda (ls)
+    (and (symbol? (car ls)) (if(number? (cadr ls)) (positive? (cadr ls)) #f))))
 
 ;;--------  Used by the testing mechanism   ------------------
 
