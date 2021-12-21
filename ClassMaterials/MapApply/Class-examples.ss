@@ -5,14 +5,14 @@
 (define firsts
   (lambda (lol)
     '() ;; NYI
-))
+    ))
 
 ; Map unary
 
 (define map-unary
   (lambda (func list)
     '() ;; NYI
-  ))
+    ))
 
 ;; use map-unary to simplify firsts
 
@@ -30,7 +30,7 @@
 (define sum-pairs
   (lambda (pairlist)
     '() ;; NYI
-  ))
+    ))
 
 (sum-pairs '((1 2) (3 4))) ;; should yield (3 7)
 
@@ -39,7 +39,7 @@
 (define halve-evens
   (lambda (pairlist)
     '() ;; NYI
-  ))
+    ))
 
 (halve-evens '(1 2 3 40 60)) ;; should yield (1 1 3 20 30)
 
@@ -52,7 +52,7 @@
 (define remove-divisible-by 
   (lambda (num list)
     '() ;; NYI
-  ))
+    ))
 
 (remove-divisible-by 3 '(1 2 3 4 5 6)) ;; should yield (1 2 4 5)
 
@@ -75,7 +75,7 @@
 (define largest-in-lists
   (lambda (llon)
     '()
-  ))
+    ))
 
 (largest-in-lists '((1) (2 3) () () (9 5) ())) ;; 9
 (largest-in-lists '(()())) ;; #f
