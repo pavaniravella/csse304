@@ -8,26 +8,39 @@
 
 ;-------------------------------------------------------------
 ; Does slist contain sym (at any level)?
-(define (contains? slist sym)
+(define (contains? slist sym) ; (define contains? (lambda (slist sym)...
   (let in-list? ([slist slist]) ; We'll use named-let a lot today
-    (cond [(null? slist)
+    (cond [(null? slist) #f]
+          [(symbol? (car slist))
+           (or (eq? sym (car slist))
+               (in-list? (cdr slist)))]
+          [else ; car is an s-list
+           (or (in-list? (car slist)) 
+               (in-list? (cdr slist)))])))
 
 
 
 
-(contains? '() 'a)                          ; #f
-(contains? '(b a) 'a)                       ; #t
-(contains? '(( b (a)) ()) 'a)               ; #t
-(contains? '((c b ()) ( b (c a)) ()) 'a)    ; #t
-(contains? '((c b ()) ( b (c a)) ()) 'p)    ; #f
+;(contains? '() 'a)                          ; #f
+;(contains? '(b a) 'a)                       ; #t
+;(contains? '(( b (a)) ()) 'a)               ; #t
+;(contains? '((c b ()) ( b (c a)) ()) 'a)    ; #t
+;(contains? '((c b ()) ( b (c a)) ()) 'p)    ; #f
 
 
 ;-------------------------------------------------------------
 ; how many times does sym occur in slist?
 (define  (count-occurrences slist sym)
   (let count ([slist slist])
-    (cond [(null? slist)
-	  
+    (cond [(null? slist) 0]
+          [(symbol? (car slist))
+           (+  (if (eq? sym (car slist))
+                   1
+                   0)
+               (count (cdr slist)))]
+          [else ; car is an s-list
+           (+ (count (car slist))
+              (count (cdr slist)))])))	  
 
 
 (count-occurrences '() 'a)                      ; 0
@@ -41,8 +54,14 @@
 ; in the same order as the original s-list
 (define  (flatten slist)
   (let flatten ([slist slist])
-    (cond [(null? slist) 
-
+    (cond [(null? slist) '()]
+          [(symbol? (car slist))
+           (cons (car slist) (flatten (cdr slist)))
+           ]
+          [else
+           (append (flatten (car slist)) (flatten (cdr slist)))
+           ])))
+           
 
 
 (flatten '( () (a ((b) c () ((d e ((f))) g) h)) ()))  ; (a b c d e f g h)
@@ -53,8 +72,14 @@
 ; Replace each symbol with a 2-list - that symbol and its depth within slist
 (define (notate-depth slist) 
   (let notate ([slist slist]
-	       [depth 1])
-    (cond [(null? slist) 
+               [depth 1])
+    (cond [(null? slist) '() ]
+          [(symbol? (car slist))
+           (cons (list (car slist) depth) (notate (cdr slist) (add1 depth)))
+           ]
+          [else
+           (cons (notate (car slist)) (notate (cdr slist) (add1 depth)))
+           ])))
 
 
 
@@ -69,7 +94,16 @@
 ; replace each occurrence of symbol s1 in slist by symbol s2
 (define  (subst s1 s2 slist) 
   (let subst ([slist slist])
-    (cond [(null? slist) 
+    (cond [(null? slist) '()]
+          [(symbol? (car slist))
+           (cons (if (eq? (car slist) s1)
+                     s2
+                     (car slist)
+                     )
+                 (subst (cdr slist)))]
+          [else
+           (cons (subst (car slist)) (subst (cdr slist)))
+           ])))
   
 
 (subst 'a 'b '(() a (c ((a) a) (c (((c a)))))))  ; (() b (c ((b) b) (c (((c b)))))

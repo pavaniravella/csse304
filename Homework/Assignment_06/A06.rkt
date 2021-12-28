@@ -3,40 +3,62 @@
 (provide curry2 curried-compose compose make-list-c reverse-it map-by-position empty-BST empty-BST? BST-insert BST-inorder BST? BST-element BST-left BST-right BST-insert-nodes BST-contains? BST-height let->application let*->let qsort sort-list-of-symbols)
 
 (define curry2
-  (lambda (a)
-    (nyi)))
+  (lambda (f)
+    (lambda (a)
+      (lambda (b)
+        (f a b)
+        )
+      )))
 
 (define curried-compose
-  (lambda (a)
-    (nyi)))
+  (lambda (f)
+    (lambda (a)
+      (lambda (b)
+        (f (a b))))))
 
-(define compose
-  (lambda a
-    (nyi)))
+;;ask Jordan about 
+(define (compose . list-of-functions)
+  (lambda (x)
+    (cond
+      [(null? list-of-functions) x]
+      [(cons? list-of-functions)
+       ((car list-of-functions) ((apply compose (cdr list-of-functions)) x))])))
 
 (define make-list-c
-  (lambda (a)
-    (nyi)))
+  (lambda (num)
+    (lambda (obj)
+      (make-list num obj)
+      )
+    ))
+
+(define (reverse-it-helper ls acc)
+  (cond
+    [(null? ls) acc]
+    [(reverse-it-helper (rest ls) (cons (first ls) acc))]
+    ))
 
 (define reverse-it
-  (lambda (a)
-    (nyi)))
+  (lambda (ls)
+    (reverse-it-helper ls '())))
 
 (define map-by-position
-  (lambda (a b)
-    (nyi)))
+  (lambda (fn-list arg-list)
+    (map (lambda (f a) (f a))fn-list arg-list)))
 
 (define empty-BST
-  (lambda ()
-    (nyi)))
-
+  (lambda () '()))
+	
 (define empty-BST?
-  (lambda (a)
-    (nyi)))
+  (lambda (obj)
+    (null? obj)))
+
 
 (define BST-insert
-  (lambda (a b)
-    (nyi)))
+  (lambda (num bst)
+    (cond
+      [(null?)]
+      
+      )))
 
 (define BST-inorder
   (lambda (a)
@@ -47,16 +69,23 @@
     (nyi)))
 
 (define BST-element
-  (lambda (a)
-    (nyi)))
+  (lambda (bst)
+    (if (list? bst)
+        (first bst)
+        '())))
 
 (define BST-left
-  (lambda (a)
-    (nyi)))
+  (lambda (bst)
+    (if (list? bst)
+        (second bst)
+        '())))
 
-(define BST-right
-  (lambda (a)
-    (nyi)))
+
+(define (BST-right bst)
+ (if (list? bst)
+        (third bst)
+        '()))
+
 
 (define BST-insert-nodes
   (lambda (a b)
