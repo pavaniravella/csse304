@@ -44,6 +44,7 @@
   )
 
   (slist-symbols-at-depth equal? ; (run-test slist-symbols-at-depth)
+                    
     [(slist-symbols-at-depth '(a (b c) d) 2) '(b c) 1] ; (run-test slist-symbols-at-depth 1)
     [(slist-symbols-at-depth '(a (b c) d) 1) '(a d) 2] ; (run-test slist-symbols-at-depth 2)
     [(slist-symbols-at-depth '(a (b c) d) 3) '() 2] ; (run-test slist-symbols-at-depth 3)

@@ -1,3 +1,4 @@
+#lang scheme 
 ; You were not required to use map, 
 ; but I present some solutions that use it, 
 ; so you will have additional map examples.

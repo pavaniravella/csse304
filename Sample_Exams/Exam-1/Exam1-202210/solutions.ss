@@ -75,20 +75,27 @@
         ((cur-fun b) a)))))
 
 (define make-thingy
-  (let ((a 'apple))
-    (lambda ()
-      (let ((b 'banana))
-        (lambda (a2 b2 c2)
+  (let ((a 'apple)) ;shared across every one of them 
+    (lambda () ;outer
+      (let ((b 'banana)) ;; every argument to no argumnet lambda 
+        (lambda (a2 b2 c2) ;inner 
           (let ((c 'cherry))
-            (display (list a b c))
+            (display (list a b c)) ;; every arguemtn has its own c 
             (set! a a2)
             (set! b b2)
             (set! c c2)))))))
 
-(let ([thingy1 (make-thingy)] [thingy2 (make-thingy)])
-  (thingy1 'atlanta 'boston 'chicago)
+
+;;when make-thingy is called the empty lambda is called 
+(let ([thingy1 (make-thingy)] [thingy2 (make-thingy)]) ;when called it calls the inner lambda
+  ;;t1 : a= apple, b= banana, c = cherry ;;t2 = apple, b= banana, c = cherry
+  (thingy1 'atlanta 'boston 'chicago) ;;apple, banana, cherry 
+  ;;t1 : a= atlanta, b = boston, c= chicago = ;;t2  a= atlanta, b = banana, c = chherry 
   (thingy2 'ant 'bear 'cat)
+  ;; outer a= ant, t1: a= ant, b = boston, c = cherry:;; t2:  a = ant, b = bear , c= cat 
   (thingy1 'aaa 'bbb 'ccc))
+;; t1 : a = 'aaa b = bbb, c= cherrry ;; t2: a= 'aaa b= bear, c= cherry 
       
+
 
   

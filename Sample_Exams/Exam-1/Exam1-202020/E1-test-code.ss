@@ -1,3 +1,4 @@
+#lang scheme 
 ;; Test code for exam 1 202020
 
 

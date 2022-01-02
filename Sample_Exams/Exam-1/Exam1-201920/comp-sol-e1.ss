@@ -54,7 +54,7 @@
 	  (first (composed-fns x))))]))
 (define find-by-path
   (lambda (path-list slist)
-    ((apply compose (map eval (reverse path-list))) slist)))
+    (apply compose (map eval (reverse path-list)) slist)))
 (define make-vec-iterator
   (lambda (v)
     (let ([pos 0] [len (vector-length v)])

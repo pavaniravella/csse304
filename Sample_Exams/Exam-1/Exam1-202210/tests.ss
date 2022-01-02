@@ -1,3 +1,4 @@
+#lang scheme
 (define (test-set-subtract)
   (let ([correct '((c a) (c) () () (a b c) (a c f g h))]
         [answers 
@@ -6,9 +7,9 @@
                (set-subtract '(a b c) '(c a b))
                (set-subtract '() '(c a b))
                (set-subtract '(a b c) '())
-               (set-subtract '(a b c e f g h i) '(e i b)))])
+               (set-subtract '(a b c e f g h i) '(e i b)))])))
                
-    (display-results correct answers set-equals?)))
+    (display-results correct answers set-equals?)
 
 (define (test-sublist?)
   (let ([correct '(#t #t #t #f #f #t #f #t #t)]
