@@ -1,6 +1,6 @@
 #lang racket
 
-(require "../chez-init.rkt")
+(require "../chez-init.rkt" racket/format)
 (provide eval-one-exp)
 
 ;-------------------+
@@ -12,20 +12,129 @@
 ; parsed expression.  You'll probably want to replace this 
 ; code with your expression datatype from A11b
 
-(define-datatype expression expression?  
-  [var-exp        ; variable references
-   (id symbol?)]
-  [lit-exp        ; "Normal" data.  Did I leave out any types?
-   (datum
-    (lambda (x)
-      (ormap 
-       (lambda (pred) (pred x))
-       (list number? vector? boolean? symbol? string? pair? null?))))]
-  [app-exp        ; applications
-   (rator expression?)
-   (rands (list-of? expression?))]  
+;;CHECKING IF LEGIT LAMBDA
+(define (lambda? exp)
+  (and (list? exp) ;check if it is list
+       (>= (length exp) 3) ;equal than 3 
+       ; (or (symbol? (2nd exp))
+       (and (list? (2nd exp)) (andmap symbol? (2nd exp)) 
+            ) ; second element should either be a symbol or a list containing unique elements 
+       ;(or (expression? 3rd) ((list-of? expression?) (3rd exp))) ;check if the third element is an expression or list of 
+       (equal? 'lambda (1st exp))))
+       
+
+;;HELPER TO CHECK FOR UNIQUE ELEMENTS
+(define (unique-elements? ls)
+  (cond
+    [(null? ls) #f]
+    [(member (first ls) (rest ls)) #t]
+    [else
+     (unique-elements? (rest ls))
+     ]
+    )
   )
-	
+;;CHECK IF LEGIT LET
+(define (let? exp)
+  (and (list? exp) (<=  3(length exp))
+       (equal? 'let (1st exp)) ((list-of? ))) ;check the binding
+  )
+;;CHECK IF-EXP
+(define (if-exp? e)
+  (and (equal? 'if (1st e))(= (length e) 4))
+  )
+;;CHECK IF-ELSE-EXP
+(define (if-else? exp)
+  (and (equal? 'if (1st exp)))
+  )
+;;CHECK SET! EXP
+(define (set!-exp? exp)
+  (and (= 3 (length exp)) (symbol? (2nd exp)))
+  )
+
+;;CHECK LET-EXP
+(define (let-exp? exp) ;returns true IFF exp length is 3, 2nd is a list, 3rd is a list of expressions or just an expression
+  (and (>=  (length exp) 3) ;check length 3
+       (list? (2nd exp)) ;2nd part is alist
+       (andmap (lambda (x) (and (list? x) (= 2 (length x)) (symbol? (car x)) )) (2nd exp)) ; check if it is proper structure of [symbol ...]
+       ))
+
+;;CHECK LET*-EXP
+(define (let*-exp? exp)
+  (and (> (length exp) 2)
+       (list? (2nd exp)) ;2nd part is alist
+       (andmap (lambda (x) (and (= 2 (length x)) (symbol? (car x)))) (2nd exp)) ; check if it is proper structure of [symbol ...]
+       )
+  )
+      
+;;CHECK LAMBDA-NO-PAREN
+(define (lambda-no-paren-exp? exp)
+  (and (> (length exp) 2) (symbol? (2nd exp)) ; simply check if the 2nd part is a symbol
+       ))
+;;CHECK LETREC
+(define (letrec-exp? exp)
+  (and (not (null? (2nd exp)))
+       (not (null? (cddr exp)))
+       (list? (cdr exp))
+       (list? (2nd exp))
+       (not (null? (caadr exp)))
+       (andmap (lambda (ls) (equal? (length ls) 2)) (cadr exp))
+       (andmap symbol? (map car (cadr exp)))
+       )
+  )
+;;CHECK LITERAL
+(define (literal? exp)
+  (or (number? exp) (boolean? exp)
+      (string? exp)(empty? exp))) ;removed the vector 
+
+;;DATA TYPE DEFINITIOn
+(define-datatype expression expression?
+  [var-exp
+   (id symbol?)]
+  [lit-exp
+   (data number?)]
+  [vector-exp ;vector expresion
+   (vec vector?)
+   ]
+  [lambda-exp
+   (ids (list-of? symbol?))
+   (body (list-of? expression?))
+   ]
+  [lambda-no-paren-exp
+   (id symbol?)
+   (body (list-of? expression?))
+   ]
+  [let-exp
+   (vars-vals (list-of? expression?))
+   (body (list-of? expression?))]
+  [let*-exp
+   (vars-vals (list-of? expression?))
+   (body (list-of? expression?))
+   ]
+  [name-let-exp ;figure out let and the list of stuff
+   (id symbol?)
+   (var-vals (list-of? expression?))  ;;value expression [(symbol expression) (symbol expression) ...] 
+   (body (list-of? expression?))
+   ]
+  [letrec-exp
+   (vars-vals (list-of? expression?))
+   (body (list-of? expression?))
+   ]
+  [if-exp
+   (pred expression?)
+   (body expression?)
+   ]
+  [if-else-exp
+   (pred expression?) 
+   (consequent expression?)
+   (alternative expression?)
+   ]
+  [set!-exp ;make sure that there is an exclamation point 
+   (id symbol?)
+   (body expression?)
+   ]
+  [app-exp
+   (rator expression?)
+   (rand (list-of? expression?))])
 
 ;; environment type definitions
 
@@ -42,6 +151,7 @@
 
 ; datatype for procedures.  At first there is only one
 ; kind of procedure, but more kinds will be added later.
+
 
 (define-datatype proc-val proc-val?
   [prim-proc
@@ -62,19 +172,103 @@
 (define 1st car)
 (define 2nd cadr)
 (define 3rd caddr)
+(define 4th cadddr)
 
 ; Again, you'll probably want to use your code from A11b
 
-(define parse-exp         
+(define parse-exp         ;ask someone why you don't have cases 
   (lambda (datum)
     (cond
       [(symbol? datum) (var-exp datum)]
-      [(number? datum) (lit-exp datum)]
+      [(vector? datum) (vector-exp datum)] ;adding a vector 
+      [(literal? datum) (lit-exp datum)]
       [(pair? datum)
        (cond
-         [else (app-exp (parse-exp (1st datum))
-                        (map parse-exp (cdr datum)))])]
-      [else (error 'parse-exp "bad expression: ~s" datum)])))
+         ;LAMBDA
+         [(equal? 'lambda (1st datum))
+          (cond
+            [(lambda? datum) ; (lambda x)
+             (lambda-exp (2nd datum) (map parse-exp (drop datum 2)))]
+            [(lambda-no-paren-exp? datum)
+             (lambda-no-paren-exp (2nd datum) (map parse-exp (cddr datum)))
+             ]
+            [else
+             (error 'parse-exp "parse-error")
+             ]
+            )
+          ]
+         ;IF
+         [(equal? 'if (1st datum))
+          (cond
+            [(= 4 (length datum)) ;if pred consequent alternative (if else)
+             (if-else-exp (parse-exp (2nd datum)) (parse-exp (3rd datum)) (parse-exp (4th datum)))
+             ]
+            [(= 3 (length datum)) ; one armed if
+             (if-exp (parse-exp (2nd datum)) (parse-exp (3rd datum)))
+             ]
+            [else
+             (error 'parse-exp "parse-error") ;length is not equal to three or four
+             ]
+            )
+          ]
+         ;SET
+         [(equal? 'set! (1st datum))
+          (cond
+            [(and (= (length datum) 3) (symbol? (2nd datum))) ;set is legit is the datum length is 3
+             (set!-exp (2nd datum) (parse-exp (3rd datum)))
+             ]
+            [else
+             (error 'parse-exp "parse-error") ;length is not equal to three
+             ]
+            )
+          ]
+         ;LET
+         [(equal? 'let (1st datum))
+          (cond
+            [(let-exp? datum)
+             ;(let-exp (map parse-exp (map car (cadr datum))) (map parse-exp (map cadr (cadr datum))) (map parse-exp (cddr datum)))
+             (let-exp (map parse-exp (2nd datum))
+                      (map parse-exp (cddr datum)))
+             ]
+            [else
+             (error 'parse-exp "parse-error")
+             ]
+            )
+          ]
+         ;LET*
+         [(equal? 'let* (1st datum))
+          (cond
+            [(let*-exp? datum)
+             (let*-exp (map parse-exp (2nd datum))
+                       (map parse-exp (cddr datum)))
+             ]
+            [else
+             (error 'parse-exp "parse-error")
+             ]
+            )
+          ]
+         ;LETREC I AM DEAD
+         [(equal? 'letrec (1st datum))
+          (cond
+            [(letrec-exp? datum)
+             (letrec-exp (map parse-exp (2nd datum))
+                         (map parse-exp (cddr datum)))
+             ]
+            [else
+             (error 'parse-exp "parse-error")
+             ]
+
+            )
+          ]
+         [else
+          (if (list? (cdr datum))
+              (app-exp (parse-exp (1st datum)) (map parse-exp (cdr datum)))
+              (error 'parse-exp "parse-error"))])]
+    
+      [else
+       (error 'parse-exp "bad expression: ~s" datum)
+       ;(~a "parse-exp bad expression: " datum)
+       ])))
 
 
 ;-------------------+
