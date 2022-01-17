@@ -83,15 +83,26 @@
   )
 ;;CHECK LITERAL
 (define (literal? exp)
-  (or (number? exp) (boolean? exp)
-      (string? exp)(empty? exp))) ;removed the vector 
+  (or (number? exp)
+      (boolean? exp)
+      (string? exp)
+      
+      )) ;removed the vector
+;;CHECK QUOTED LITERAL
+(define (quoted-exp? exp)
+  (and (list? exp) (= (length exp) 2) (equal? 'quote (1st exp)))
+  )
 
 ;;DATA TYPE DEFINITIOn
 (define-datatype expression expression?
   [var-exp
    (id symbol?)]
+  [quoted-exp ;maybe to add or delete 
+   (data quoted-exp?)
+   ]
   [lit-exp
-   (data number?)]
+   (data literal?) ;to be modified 
+   ]
   [vector-exp ;vector expresion
    (vec vector?)
    ]
@@ -181,7 +192,10 @@
     (cond
       [(symbol? datum) (var-exp datum)]
       [(vector? datum) (vector-exp datum)] ;adding a vector 
+      [(quoted-exp? datum) (quoted-exp datum)]
       [(literal? datum) (lit-exp datum)]
+      ;if it is a quoted datum return the literal as the second part 
+     
       [(pair? datum)
        (cond
          ;LAMBDA
@@ -346,6 +360,10 @@
       [lit-exp (datum) datum]
       [var-exp (id)
                (apply-env init-env id)]
+      ;adding quote experession
+      [quoted-exp (data)
+                 (2nd data)
+                 ]
       [app-exp (rator rands)
                (let ([proc-value (eval-exp rator)]
                      [args (eval-rands rands)])

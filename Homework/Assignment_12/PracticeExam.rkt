@@ -1,0 +1,21 @@
+#lang racket
+(define curry
+  (lambda (f n)
+    (letrec
+        ([c (lambda (n args)
+              (display "this is n: ")
+              (displayln n)
+              (displayln "i am in middle lambda")
+              (display "this is args: ")
+               (displayln args)
+              (if (zero? n)
+                  (apply f (reverse args))
+                  (lambda (x)
+                    (display "this is args in the inner lambda")
+                    (displayln args)
+                    (displayln "i am in inner most lambda")
+                    (c (- n 1)
+                       (cons x args)))))])
+      (displayln "i am calling c")
+         (c n '()))))
+((curry (lambda (z) (* 2 z)) 1 ) 5)

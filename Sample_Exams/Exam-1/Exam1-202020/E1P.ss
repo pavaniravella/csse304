@@ -19,14 +19,14 @@
 (1 3 6 10 15 21)
 (3 5 5 0 6)
 |#
-(prefix-sums '(4))
-(prefix-sums '(1 3 5 2))
-(prefix-sums '(1 2 3 4 5 6))
-(prefix-sums '(3 2 0 -5 6))
+;(prefix-sums '(4))
+;(prefix-sums '(1 3 5 2))
+;(prefix-sums '(1 2 3 4 5 6))
+;(prefix-sums '(3 2 0 -5 6))
 
 (define (suffix-sums lon)
   (cond
-    [(null? lon) '()]
+    [(null? (cdr lon)) lon]
     [else
      (cons (+ (car lon) (car (suffix-sums (cdr lon)))) (suffix-sums (cdr lon)))
      ]
@@ -38,9 +38,9 @@
 		     (21 20 18 15 11 6)
 		     (6 3 1 1 6)
 |#
-;(suffix-sums '(4))
-;(suffix-sums '(1 3 5 2))
-;(suffix-sums '(1 2 3 4 5 6))
+(suffix-sums '(4))
+(suffix-sums '(1 3 5 2))
+(suffix-sums '(1 2 3 4 5 6))
 ;(suffix-sums '(3 2 0 -5 6))
 (define (even-odds-helper ls even odd)
   (cond
