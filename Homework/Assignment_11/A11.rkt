@@ -1,106 +1,22 @@
 #lang racket
 
-(require "../chez-init.rkt")
-(provide my-let my-or += return-first bintree? leaf-node interior-node bintree-to-list max-interior parse-exp unparse-exp)
-(require racket/trace)
-;Problem 1
-;a
-(define-syntax my-let
- (syntax-rules ()
-   [(_ ((x v) ...) e1 e2 ...)
-    ((lambda (x ...) e1 e2 ...) 
-     v ...)]
-   [(_ name ((x v) ...) e1 e2 ...)
-    (letrec ((name (lambda (x ...) e1 e2 ...))) (name v ...))])) 
+(require "../chez-init.rkt" racket/format)
+(provide eval-one-exp)
 
-;b
-(define-syntax my-or
-  (syntax-rules ()
-    [(_ ) #f]
-    [(_ exp) exp]
-    [(_ exp1 exp2 ...) (let ((val exp1))
-                         (if val
-                             val
-                             (my-or exp2 ...)))]))
-;c
-(define-syntax +=
-  (syntax-rules ()
-    [(_ var num)
-     ;(+ var num)]))
-     (begin (set! var (+ var num)) var)]));need to return var, not just mutate
-;d
-(define-syntax return-first
-    (syntax-rules ()
-      [(_ e1 e2 ...)
-       (let ((return e1)) (begin e2 ... return))]))
+;-------------------+
+;                   |
+;   sec:DATATYPES   |
+;                   |
+;-------------------+
 
-;Problem 2
-(define-datatype bintree bintree?
-  (leaf-node
-   (datum number?))
-  (interior-node
-   (key symbol?)
-   (left-tree bintree?)
-   (right-tree bintree?)))
-
-(define bintree-to-list
-  (lambda (tree)
-    (cases bintree tree
-      [leaf-node (datum) (list 'leaf-node datum)]
-      [interior-node (key left-tree right-tree)
-                     (list 'interior-node key (bintree-to-list left-tree) (bintree-to-list right-tree))])))
-
-;Problem #3
-(define max-interior
-	(lambda (tree)
-		(cadr (max-interior-helper tree));returns list of (sum leaf-node sum)
-		))
-
-(define max-interior-helper
-  (lambda (tree)
-    (cases bintree tree
-      [leaf-node (datum) datum];copied in code from A7 and simplified
-      [interior-node (key left-tree right-tree) (let ([max-left (max-interior-helper left-tree)] [max-right (max-interior-helper right-tree)])
-                                                  (cond
-                                                    [(and (number? max-left) (number? max-right)) (list (+ max-left max-right) key (+ max-left max-right))]
-                                                    [(and (list? max-left) (number? max-right)) (let ((curr-sum (+ max-right (1st max-left))) (curr-max (3rd max-left))) (if (> curr-max curr-sum)
-                                                                                                                                                                             (list curr-sum (2nd max-left) curr-max)
-                                                                                                                                                                             (list curr-sum key curr-sum)))]
-                                                    [(and (number? max-left) (list? max-right)) (let ((curr-sum (+ max-left (1st max-right))) (curr-max (3rd max-right))) (if (> curr-max curr-sum)
-                                                                                                                                                                              (list curr-sum (2nd max-right) curr-max)
-                                                                                                                                                                              (list curr-sum key curr-sum)))]
-                                                    [else (let ((curr-sum (+ (1st max-left) (1st max-right))) (curr-max (if  (> (3rd max-right) (3rd max-left))
-                                                                                                                             (cdr max-right)
-                                                                                                                             (cdr max-left)))) 
-                                                            (if (> (2nd curr-max) curr-sum)
-                                                                (list curr-sum (1st curr-max) (2nd curr-max))
-                                                                (list curr-sum key curr-sum)))]
-                                                    ))])))
-
-; This is a parser for simple Scheme expressions, 
-; such as those in EOPL, 3.1 thru 3.3.
-
-; You will want to replace this with your parser that includes more expression types, more options for these types, and error-checking.
-
-;Harrison Wight & Pavani Ravella
-; Procedures to make the parser a little bit saner.
-(define 1st car)
-(define 2nd cadr)
-(define 3rd caddr)
-(define 4th cadddr)
-;;let, letrec, let*, if, set, lit-exp, namelet, 
-
-(define-datatype binding-exp binding?
-  [binding
-   (id symbol?)
-   (value expression?)
-   ])
+; parsed expression.  You'll probably want to replace this 
+; code with your expression datatype from A11b
 
 ;;CHECKING IF LEGIT LAMBDA
 (define (lambda? exp)
   (and (list? exp) ;check if it is list
        (>= (length exp) 3) ;equal than 3 
-      ; (or (symbol? (2nd exp))
+       ; (or (symbol? (2nd exp))
        (and (list? (2nd exp)) (andmap symbol? (2nd exp)) 
             ) ; second element should either be a symbol or a list containing unique elements 
        ;(or (expression? 3rd) ((list-of? expression?) (3rd exp))) ;check if the third element is an expression or list of 
@@ -141,6 +57,7 @@
        (list? (2nd exp)) ;2nd part is alist
        (andmap (lambda (x) (and (list? x) (= 2 (length x)) (symbol? (car x)) )) (2nd exp)) ; check if it is proper structure of [symbol ...]
        ))
+
 ;;CHECK LET*-EXP
 (define (let*-exp? exp)
   (and (> (length exp) 2)
@@ -148,6 +65,7 @@
        (andmap (lambda (x) (and (= 2 (length x)) (symbol? (car x)))) (2nd exp)) ; check if it is proper structure of [symbol ...]
        )
   )
+      
 ;;CHECK LAMBDA-NO-PAREN
 (define (lambda-no-paren-exp? exp)
   (and (> (length exp) 2) (symbol? (2nd exp)) ; simply check if the 2nd part is a symbol
@@ -165,13 +83,26 @@
   )
 ;;CHECK LITERAL
 (define (literal? exp)
-  (or (number? exp) (boolean? exp) (string? exp))) ;removed the vector 
-;;DEFINING THE DATA TYPE
+  (or (number? exp)
+      (boolean? exp)
+      (string? exp)
+      
+      )) ;removed the vector
+;;CHECK QUOTED LITERAL
+(define (quoted-exp? exp)
+  (and (list? exp) (= (length exp) 2) (equal? 'quote (1st exp)))
+  )
+
+;;DATA TYPE DEFINITIOn
 (define-datatype expression expression?
   [var-exp
    (id symbol?)]
+  [quoted-exp ;maybe to add or delete 
+   (data quoted-exp?)
+   ]
   [lit-exp
-   (data number?)]
+   (data literal?) ;to be modified 
+   ]
   [vector-exp ;vector expresion
    (vec vector?)
    ]
@@ -185,26 +116,18 @@
    ]
   [let-exp
    (vars-vals (list-of? expression?))
-   ;(ids (list-of? expression?))
-   ;(values (list-of? expression?))
    (body (list-of? expression?))]
   [let*-exp
    (vars-vals (list-of? expression?))
-   ;(ids (list-of? expression?))
-   ;(values (list-of? expression?))
    (body (list-of? expression?))
    ]
   [name-let-exp ;figure out let and the list of stuff
    (id symbol?)
-   (var-vals (list-of? (list-of? binding-exp)))  ;;value expression [(symbol expression) (symbol expression) ...] 
-   ;;TODO confirm that this is allowed to be a list of expressions 
+   (var-vals (list-of? expression?))  ;;value expression [(symbol expression) (symbol expression) ...] 
    (body (list-of? expression?))
    ]
-
   [letrec-exp
    (vars-vals (list-of? expression?))
-   ;(ids (list-of? expression?))
-   ;(values (list-of? expression?))
    (body (list-of? expression?))
    ]
   [if-exp
@@ -224,13 +147,55 @@
    (rator expression?)
    (rand (list-of? expression?))])
 
+;; environment type definitions
+
+(define scheme-value?
+  (lambda (x) #t))
+  
+(define-datatype environment environment?
+  [empty-env-record]
+  [extended-env-record
+   (syms (list-of? symbol?))
+   (vals (list-of? scheme-value?))
+   (env environment?)])
+
+
+; datatype for procedures.  At first there is only one
+; kind of procedure, but more kinds will be added later.
+
+
+(define-datatype proc-val proc-val?
+  [prim-proc
+   (name symbol?)])
+
+  
+;-------------------+
+;                   |
+;    sec:PARSER     |
+;                   |
+;-------------------+
+
+; This is a parser for simple Scheme expressions, such as those in EOPL 3.1 thru 3.3.
+
+; You will want to replace this with your parser that includes more expression types, more options for these types, and error-checking.
+
+; Helper procedures to make the parser a little bit saner.
+(define 1st car)
+(define 2nd cadr)
+(define 3rd caddr)
+(define 4th cadddr)
+
+; Again, you'll probably want to use your code from A11b
 
 (define parse-exp         ;ask someone why you don't have cases 
   (lambda (datum)
     (cond
       [(symbol? datum) (var-exp datum)]
       [(vector? datum) (vector-exp datum)] ;adding a vector 
+      [(quoted-exp? datum) (quoted-exp datum)]
       [(literal? datum) (lit-exp datum)]
+      ;if it is a quoted datum return the literal as the second part 
+     
       [(pair? datum)
        (cond
          ;LAMBDA
@@ -314,37 +279,150 @@
               (app-exp (parse-exp (1st datum)) (map parse-exp (cdr datum)))
               (error 'parse-exp "parse-error"))])]
     
-      [else (error 'parse-exp "bad expression: ~s" datum)])))
+      [else
+       (error 'parse-exp "bad expression: ~s" datum)
+       ;(~a "parse-exp bad expression: " datum)
+       ])))
 
-(define unparse-exp
+
+;-------------------+
+;                   |
+; sec:ENVIRONMENTS  |
+;                   |
+;-------------------+
+
+
+; Environment definitions for CSSE 304 Scheme interpreter.  
+; Based on EoPL sections 2.2 and 2.3
+
+(define empty-env
+  (lambda ()
+    (empty-env-record)))
+
+(define extend-env
+  (lambda (syms vals env)
+    (extended-env-record syms vals env)))
+
+(define list-find-position
+  (lambda (sym los)
+    (let loop ([los los] [pos 0])
+      (cond [(null? los) #f]
+            [(eq? sym (car los)) pos]
+            [else (loop (cdr los) (add1 pos))]))))
+	    
+(define apply-env
+  (lambda (env sym) 
+    (cases environment env 
+      [empty-env-record ()      
+                        (error 'env "variable ~s not found." sym)]
+      [extended-env-record (syms vals env)
+                           (let ((pos (list-find-position sym syms)))
+                             (if (number? pos)
+                                 (list-ref vals pos)
+                                 (apply-env env sym)))])))
+
+
+;-----------------------+
+;                       |
+;  sec:SYNTAX EXPANSION |
+;                       |
+;-----------------------+
+
+; To be added in assignment 14.
+
+;---------------------------------------+
+;                                       |
+; sec:CONTINUATION DATATYPE and APPLY-K |
+;                                       |
+;---------------------------------------+
+
+; To be added in assignment 18a.
+
+
+;-------------------+
+;                   |
+;  sec:INTERPRETER  |
+;                   |
+;-------------------+
+
+; top-level-eval evaluates a form in the global environment
+
+(define top-level-eval
+  (lambda (form)
+    ; later we may add things that are not expressions.
+    (eval-exp form)))
+
+; eval-exp is the main component of the interpreter
+
+(define eval-exp
   (lambda (exp)
     (cases expression exp
-      [var-exp (id) id]
-      [lit-exp (data) data]
-      [lambda-exp (ids body) (cons 'lambda (cons ids (map unparse-exp body)))];works
-      [lambda-no-paren-exp (id body) (cons 'lambda (cons id (map unparse-exp body)))];works
-      [let-exp (var-vals body) (cons 'let (cons (map unparse-exp var-vals) (map unparse-exp body)))];(apply list 'let (map unparse-exp ids) (map unparse-exp values) (map unparse-exp body))];(cons 'let (cons (map unparse-exp values)]
-      [let*-exp (var-vals body) (cons 'let* (cons (map unparse-exp var-vals) (map unparse-exp body)))]
-      [name-let-exp (id var-vals body) 'letname]
-      [vector-exp (vec) vec]
-      [letrec-exp (var-vals body) (cons 'letrec (cons (map unparse-exp var-vals) (map unparse-exp body)))]
-      [if-exp (pred body) (list 'if (unparse-exp pred) (unparse-exp body))]
-      [if-else-exp (pred consequent alternative) (list 'if (unparse-exp pred) (unparse-exp consequent) (unparse-exp alternative))]
-      [set!-exp (id body) (list 'set! (id) (unparse-exp body))]
-      [app-exp (rator rand) (cons (unparse-exp rator) (map unparse-exp rand))]
-      
-      )))
+      [lit-exp (datum) datum]
+      [var-exp (id)
+               (apply-env init-env id)]
+      ;adding quote experession
+      [quoted-exp (data)
+                 (2nd data)
+                 ]
+      [app-exp (rator rands)
+               (let ([proc-value (eval-exp rator)]
+                     [args (eval-rands rands)])
+                 (apply-proc proc-value args))]
+      [else (error 'eval-exp "Bad abstract syntax: ~a" exp)])))
 
-; An auxiliary procedure that could be helpful.
-(define var-exp?
-  (lambda (x)
-    (cases expression x
-      [var-exp (id) #t]
-      [else #f])))
+; evaluate the list of operands, putting results into a list
 
-;;--------  Used by the testing mechanism   ------------------
+(define eval-rands
+  (lambda (rands)
+    (map eval-exp rands)))
 
-(define-syntax nyi
-  (syntax-rules ()
-    ([_]
-     [error "nyi"])))
+;  Apply a procedure to its arguments.
+;  At this point, we only have primitive procedures.  
+;  User-defined procedures will be added later.
+
+(define apply-proc
+  (lambda (proc-value args)
+    (cases proc-val proc-value
+      [prim-proc (op) (apply-prim-proc op args)]
+      ; You will add other cases
+      [else (error 'apply-proc
+                   "Attempt to apply bad procedure: ~s" 
+                   proc-value)])))
+
+(define *prim-proc-names* '(+ - * add1 sub1 cons =))
+
+(define init-env         ; for now, our initial global environment only contains 
+  (extend-env            ; procedure names.  Recall that an environment associates
+   *prim-proc-names*   ;  a value (not an expression) with an identifier.
+   (map prim-proc      
+        *prim-proc-names*)
+   (empty-env)))
+
+; Usually an interpreter must define each 
+; built-in procedure individually.  We are "cheating" a little bit.
+
+(define apply-prim-proc
+  (lambda (prim-proc args)
+    (case prim-proc
+      [(+) (+ (1st args) (2nd args))]
+      [(-) (- (1st args) (2nd args))]
+      [(*) (* (1st args) (2nd args))]
+      [(add1) (+ (1st args) 1)]
+      [(sub1) (- (1st args) 1)]
+      [(cons) (cons (1st args) (2nd args))]
+      [(=) (= (1st args) (2nd args))]
+      [else (error 'apply-prim-proc 
+                   "Bad primitive procedure name: ~s" 
+                   prim-proc)])))
+
+(define rep      ; "read-eval-print" loop.
+  (lambda ()
+    (display "--> ")
+    ;; notice that we don't save changes to the environment...
+    (let ([answer (top-level-eval (parse-exp (read)))])
+      ;; TODO: are there answers that should display differently?
+      (pretty-print answer) (newline)
+      (rep))))  ; tail-recursive, so stack doesn't grow.
+
+(define eval-one-exp
+  (lambda (x) (top-level-eval (parse-exp x))))
