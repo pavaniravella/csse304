@@ -1,0 +1,19 @@
+#lang racket
+(define-syntax my-and
+  (syntax-rules ()
+    [(_) #t]
+    [(_ exp) exp]
+    [(_ e1 e2 ...)
+     (if e1
+	 (my-and e2 ...)
+	 #f)]))
+
+(define-syntax my-do
+  (syntax-expand (while)
+        [(_ (e1 ...) while conditions ...)
+         (begin
+           (e1 ...)
+           (let loop ()
+             (if (conditions ...)
+                 e1 ...
+                 (loop))))]))
