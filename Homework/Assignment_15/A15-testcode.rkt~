@@ -69,9 +69,7 @@
   )
 
   (memoized-fib equal? ; (run-test memoized-fib)
-    [(letrec ((fib (lambda (n) (if (< n 2) 1 (+ (fib (- n 1)) (fib (- n 2))))))) (let ((fib-memo (memoize fib car equal?))) (map fib-memo (append (make-list 20 27) (make-list 19 26)))))
-     '(317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 196418 196418 196418
-              196418 196418 196418 196418 196418 196418 196418 196418 196418 196418 196418 196418 196418 196418 196418 196418) 15] ; (run-test memoized-fib 1)
+    [(letrec ((fib (lambda (n) (if (< n 2) 1 (+ (fib (- n 1)) (fib (- n 2))))))) (let ((fib-memo (memoize fib car equal?))) (map fib-memo (append (make-list 20 27) (make-list 19 26))))) '(317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 317811 196418 196418 196418 196418 196418 196418 196418 196418 196418 196418 196418 196418 196418 196418 196418 196418 196418 196418 196418) 15] ; (run-test memoized-fib 1)
   )
 
   (memoized-pascal equal? ; (run-test memoized-pascal)
