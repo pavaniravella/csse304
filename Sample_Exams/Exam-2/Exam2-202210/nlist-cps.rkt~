@@ -1,0 +1,12 @@
+#lang racket
+
+(define nlist-filter
+  (lambda (pred? s)
+    (cond [(null? s) '()]
+          [(number? (car s))
+           (if (pred? (car s))
+               (cons (car s)
+                     (nlist-filter pred? (cdr s)))
+               (nlist-filter pred? (cdr s)))]
+          [else (cons (nlist-filter pred? (car s))
+                      (nlist-filter pred? (cdr s)))])))
