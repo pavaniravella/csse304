@@ -3,3 +3,12 @@ _site
 .jekyll-metadata
 compiled
 *.bak
+.DS_Store
+ClassMaterials/.DS_Store
+Homework/.DS_Store
+Homework/Assignment_15/.DS_Store
+Homework/Assignment_16/.DS_Store
+Sample_Exams/.DS_Store
+Sample_Exams/Exam-2/.DS_Store
+Sample_Exams/Exam-2/Exam2-202020/~$am2-202020_csse304_computer.docx
+Sample_Exams/Exam-2/Exam2-202110/.DS_Store
