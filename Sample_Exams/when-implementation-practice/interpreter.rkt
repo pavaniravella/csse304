@@ -28,7 +28,10 @@
     [(null? ls) #f]
     [(member (first ls) (rest ls)) #t]
     [else
-     (unique-elements? (rest ls))]))
+     (unique-elements? (rest ls))
+     ]
+    )
+  )
 ;;CHECK IF LEGIT LET
 (define (let? exp)
   (and (list? exp) (<=  3(length exp))
@@ -36,13 +39,16 @@
   )
 ;;CHECK IF-EXP
 (define (if-exp? e)
-  (and (equal? 'if (1st e))(= (length e) 4)))
+  (and (equal? 'if (1st e))(= (length e) 4))
+  )
 ;;CHECK IF-ELSE-EXP
 (define (if-else? exp)
-  (and (equal? 'if (1st exp))))
+  (and (equal? 'if (1st exp)))
+  )
 ;;CHECK SET! EXP
 (define (set!-exp? exp)
-  (and (= 3 (length exp)) (symbol? (2nd exp))))
+  (and (= 3 (length exp)) (symbol? (2nd exp)))
+  )
 
 ;;CHECK LET-EXP
 (define (let-exp? exp) ;returns true IFF exp length is 3, 2nd is a list, 3rd is a list of expressions or just an expression
@@ -71,15 +77,20 @@
        (list? (2nd exp))
        (not (null? (caadr exp)))
        (andmap (lambda (ls) (equal? (length ls) 2)) (cadr exp))
-       (andmap symbol? (map car (cadr exp)))))
+       (andmap symbol? (map car (cadr exp)))
+       )
+  )
 ;;CHECK LITERAL
 (define (literal? exp)
   (or (number? exp)
       (boolean? exp)
-      (string? exp))) ;removed the vector
+      (string? exp)
+      
+      )) ;removed the vector
 ;;CHECK QUOTED LITERAL
 (define (quoted-exp? exp)
-  (and (list? exp) (= (length exp) 2) (equal? 'quote (1st exp))))
+  (and (list? exp) (= (length exp) 2) (equal? 'quote (1st exp)))
+  )
 
 ;;CHECK FOR IMPROPER LAMBDA 
 (define (lambda-improper-exp? exp)
@@ -106,7 +117,6 @@
    ]
   [lambda-exp
    (ids (list-of? symbol?))
-   ;(define-body (list-of? expression?))
    (body (list-of? expression?))
    ]
   [lambda-no-paren-exp
@@ -128,50 +138,53 @@
    (syms (list-of? symbol?))
    (exps (list-of? expression?))
    (bodies (list-of? expression?))
-   ]
-  [letrec-exp
-   (proc-names (list-of? symbol?))
-   (ids (list-of? (list-of? symbol?)))
-   (bodies (list-of? (list-of? expression?)))
-   (letrec-bodies (list-of? expression?)) 
-   ]
-  [if-exp
-   (pred expression?)
-   (body expression?)
-   ]
-  [if-else-exp
-   (pred expression?) 
-   (consequent expression?)
-   (alternative expression?)
-   ]
-  [set!-exp ;make sure that there is an exclamation point 
-   (id symbol?)
-   (body expression?)
-   ]
-  [cond-exp ;two types of cond 
-   (conditions (list-of? expression?))
-   (body (list-of? expression?))]
-  [and-exp
-   (body (list-of? expression?))
-   ]
-  [or-exp
-   (body (list-of? expression?))
-   ]
-  [case-exp
-   (cond expression?)
-   (body (list-of? expression?))
-   ]
-  [while-exp
-   (cond expression?)
-   (body (list-of? expression?))
-   ]
-  [begin-exp
-    (body (list-of? expression?))
-    ]
- 
-  [app-exp
-   (rator expression?)
-   (rand (list-of? expression?))])
+  ]
+[letrec-exp
+ (proc-names (list-of? symbol?))
+ (ids (list-of? (list-of? symbol?)))
+ (bodies (list-of? (list-of? expression?)))
+ (letrec-bodies (list-of? expression?)) 
+ ]
+[if-exp
+ (pred expression?)
+ (body expression?)
+ ]
+[if-else-exp
+ (pred expression?) 
+ (consequent expression?)
+ (alternative expression?)
+ ]
+[set!-exp ;make sure that there is an exclamation point 
+ (id symbol?)
+ (body expression?)
+ ]
+[cond-exp ;two types of cond 
+ (conditions (list-of? expression?))
+ (body (list-of? expression?))]
+[and-exp
+ (body (list-of? expression?))
+ ]
+[or-exp
+ (body (list-of? expression?))
+ ]
+[case-exp
+ (cond expression?)
+ (body (list-of? expression?))
+ ]
+[while-exp
+ (cond expression?)
+ (body (list-of? expression?))
+ ]
+[begin-exp
+  (body (list-of? expression?))
+  ]
+  [when-exp
+   (test-exp (expression?))
+   (bodies (list-of? expression?))
+  ]
+[app-exp
+ (rator expression?)
+ (rand (list-of? expression?))])
 
 ;; environment type definitions
 
@@ -245,47 +258,6 @@
   )
 ; Again, you'll probably want to use your code from A11b
 
-(define (define-extractor ls)
-  (cond
-    [(null? ls) '()]
-    [(define-exp? (1st ls))
-     (cons (car ls) (define-extractor (cdr ls)))
-     ]
-    [else
-     (define-extractor (cdr ls))
-     ]
-    )
-  )
-(define (not-define-extractor ls)
-  (cond 
-    [(null? ls) '()]
-    [(not (define-exp? (car ls)))
-     ;(cons (car ls) (not-define-extractor (cdr ls)))
-     ls
-     ]
-    [else
-     (not-define-extractor (cdr ls))
-     ]
-    ))
-(define (define-exp? ls)
-  (and (list? ls) (<= 1 (length ls)) (equal? 'define (1st ls))
-       ))
-#|[letrec-exp
-   (proc-names (list-of? symbol?))
-   (ids (list-of? (list-of? symbol?)))
-   (bodies (list-of? (list-of? expression?)))
-   (letrec-bodies (list-of? expression?)) |#
-(define (convert-define-letrec  defines bodies)
-  (displayln (map 2nd defines))
-(displayln (map 2nd (map 3rd defines)))
-(displayln (map cddr (map 3rd defines)))
-(displayln bodies)
-  (letrec-exp (map 2nd defines)
-              (map 2nd (map 3rd defines))
-              (map parse-exp (map cddr (map 3rd  defines)))
-              bodies)
-  )
- 
 (define parse-exp         ;ask someone why you don't have cases 
   (lambda (datum)
     (cond
@@ -310,9 +282,7 @@
          [(equal? 'lambda (1st datum))
           (cond
             [(lambda? datum) ; (lambda x)
-             ; (lambda-exp (2nd datum) (map parse-exp (drop datum 2)))
-             (lambda-exp (2nd datum) (convert-define-letrec (define-extractor (drop datum 2)) (not-define-extractor (drop datum 2))))]
-                                                            ;(map parse-exp (define-extractor (drop datum 2))) (map parse-exp (not-define-extractor (drop datum 2))))]
+             (lambda-exp (2nd datum) (map parse-exp (drop datum 2)))]
             [(lambda-no-paren-exp? datum)
              (lambda-no-paren-exp (2nd datum) (map parse-exp (cddr datum)))
              ]
@@ -389,8 +359,10 @@
              ]
             )
           ]
-         ;DEFINE EXPRESSION
-         
+         ;WHEN-EXP
+         [(equal? 'when (1st datum))
+          (when-exp (2nd datum) (map parse-exp (cddr datum)))
+         ]
          ;BEGIN EXPRESSION
          [(equal? 'begin (1st datum))
           (begin-exp (map parse-exp (cdr datum)))]
@@ -484,7 +456,9 @@
       [quoted-exp (data) exp]
       [app-exp (rator rands)
                (app-exp (syntax-expand rator) (map syntax-expand rands))]
-
+      [when-exp (test-exp bodies)
+                (if-exp test-exp (map syntax-expand bodies))
+       ]
       ;added this section, similar to expand cond structure
       [and-exp (bodies)
                (expand-and bodies)]
@@ -514,10 +488,9 @@
       [name-let-exp (name syms exps bodies)
                     (syntax-expand (letrec-exp (list name) (list syms) (list bodies) (list (app-exp (var-exp name) exps))))
 
-                    ]
+       ]
       [letrec-exp (proc-names idss bodiess letrec-bodies)
                   (letrec-exp proc-names idss (map (lambda (x) (map syntax-expand x)) bodiess) (map syntax-expand letrec-bodies))]
-      
       [else
        exp]
       )))
@@ -547,7 +520,7 @@
                               (if-exp (syntax-expand (car exps)) (syntax-expand (car bodies))))]
       
       [else ;(displayln "else")
-       (if-else-exp (syntax-expand (car exps)) (syntax-expand (car bodies)) (loop (cdr exps) (cdr bodies)))])))
+            (if-else-exp (syntax-expand (car exps)) (syntax-expand (car bodies)) (loop (cdr exps) (cdr bodies)))])))
 
 
 (define (expand-case body)

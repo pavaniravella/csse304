@@ -28,7 +28,10 @@
     [(null? ls) #f]
     [(member (first ls) (rest ls)) #t]
     [else
-     (unique-elements? (rest ls))]))
+     (unique-elements? (rest ls))
+     ]
+    )
+  )
 ;;CHECK IF LEGIT LET
 (define (let? exp)
   (and (list? exp) (<=  3(length exp))
@@ -36,13 +39,16 @@
   )
 ;;CHECK IF-EXP
 (define (if-exp? e)
-  (and (equal? 'if (1st e))(= (length e) 4)))
+  (and (equal? 'if (1st e))(= (length e) 4))
+  )
 ;;CHECK IF-ELSE-EXP
 (define (if-else? exp)
-  (and (equal? 'if (1st exp))))
+  (and (equal? 'if (1st exp)))
+  )
 ;;CHECK SET! EXP
 (define (set!-exp? exp)
-  (and (= 3 (length exp)) (symbol? (2nd exp))))
+  (and (= 3 (length exp)) (symbol? (2nd exp)))
+  )
 
 ;;CHECK LET-EXP
 (define (let-exp? exp) ;returns true IFF exp length is 3, 2nd is a list, 3rd is a list of expressions or just an expression
@@ -71,15 +77,20 @@
        (list? (2nd exp))
        (not (null? (caadr exp)))
        (andmap (lambda (ls) (equal? (length ls) 2)) (cadr exp))
-       (andmap symbol? (map car (cadr exp)))))
+       (andmap symbol? (map car (cadr exp)))
+       )
+  )
 ;;CHECK LITERAL
 (define (literal? exp)
   (or (number? exp)
       (boolean? exp)
-      (string? exp))) ;removed the vector
+      (string? exp)
+      
+      )) ;removed the vector
 ;;CHECK QUOTED LITERAL
 (define (quoted-exp? exp)
-  (and (list? exp) (= (length exp) 2) (equal? 'quote (1st exp))))
+  (and (list? exp) (= (length exp) 2) (equal? 'quote (1st exp)))
+  )
 
 ;;CHECK FOR IMPROPER LAMBDA 
 (define (lambda-improper-exp? exp)
@@ -106,7 +117,6 @@
    ]
   [lambda-exp
    (ids (list-of? symbol?))
-   ;(define-body (list-of? expression?))
    (body (list-of? expression?))
    ]
   [lambda-no-paren-exp
@@ -168,7 +178,12 @@
   [begin-exp
     (body (list-of? expression?))
     ]
- 
+  [for-exp
+   (var symbol?)
+   (start number?)
+   (end number?)
+   (body expression?)
+   ]
   [app-exp
    (rator expression?)
    (rand (list-of? expression?))])
@@ -243,49 +258,13 @@
       exp
       (get-last-element (cdr exp)))
   )
+
+;named let-exp
+(define (named-let-exp? exp)
+  (and (<= 4 (length exp)) (list? exp) (equal? 'let (1st exp)) (symbol? (2nd exp)) (list? (3rd exp)) )
+  )
 ; Again, you'll probably want to use your code from A11b
 
-(define (define-extractor ls)
-  (cond
-    [(null? ls) '()]
-    [(define-exp? (1st ls))
-     (cons (car ls) (define-extractor (cdr ls)))
-     ]
-    [else
-     (define-extractor (cdr ls))
-     ]
-    )
-  )
-(define (not-define-extractor ls)
-  (cond 
-    [(null? ls) '()]
-    [(not (define-exp? (car ls)))
-     ;(cons (car ls) (not-define-extractor (cdr ls)))
-     ls
-     ]
-    [else
-     (not-define-extractor (cdr ls))
-     ]
-    ))
-(define (define-exp? ls)
-  (and (list? ls) (<= 1 (length ls)) (equal? 'define (1st ls))
-       ))
-#|[letrec-exp
-   (proc-names (list-of? symbol?))
-   (ids (list-of? (list-of? symbol?)))
-   (bodies (list-of? (list-of? expression?)))
-   (letrec-bodies (list-of? expression?)) |#
-(define (convert-define-letrec  defines bodies)
-  (displayln (map 2nd defines))
-(displayln (map 2nd (map 3rd defines)))
-(displayln (map cddr (map 3rd defines)))
-(displayln bodies)
-  (letrec-exp (map 2nd defines)
-              (map 2nd (map 3rd defines))
-              (map parse-exp (map cddr (map 3rd  defines)))
-              bodies)
-  )
- 
 (define parse-exp         ;ask someone why you don't have cases 
   (lambda (datum)
     (cond
@@ -310,9 +289,7 @@
          [(equal? 'lambda (1st datum))
           (cond
             [(lambda? datum) ; (lambda x)
-             ; (lambda-exp (2nd datum) (map parse-exp (drop datum 2)))
-             (lambda-exp (2nd datum) (convert-define-letrec (define-extractor (drop datum 2)) (not-define-extractor (drop datum 2))))]
-                                                            ;(map parse-exp (define-extractor (drop datum 2))) (map parse-exp (not-define-extractor (drop datum 2))))]
+             (lambda-exp (2nd datum) (map parse-exp (drop datum 2)))]
             [(lambda-no-paren-exp? datum)
              (lambda-no-paren-exp (2nd datum) (map parse-exp (cddr datum)))
              ]
@@ -352,7 +329,7 @@
          ;LET
          [(equal? 'let (1st datum))
           (cond
-            [(= 4 (length datum)) ;this is a named let 
+            [(named-let-exp? datum) ;this is a named let 
              (name-let-exp (2nd datum) (map car (3rd datum)) (map parse-exp (map cadr (3rd datum))) (map parse-exp (cdddr datum)) )
              ]
             [(let-exp? datum)
@@ -389,13 +366,15 @@
              ]
             )
           ]
-         ;DEFINE EXPRESSION
-         
          ;BEGIN EXPRESSION
          [(equal? 'begin (1st datum))
           (begin-exp (map parse-exp (cdr datum)))]
          [(equal? 'while (1st datum))
           (while-exp (parse-exp (2nd datum)) (map parse-exp (cddr datum)))]
+         ;FOR EXPRESSION
+         [(equal? 'for (1st datum))
+          (for-exp (2nd datum) (fourth datum) (sixth datum) (parse-exp (seventh datum)))
+          ]
          [else
           (if (list? (cdr datum))
               (app-exp (parse-exp (1st datum)) (map parse-exp (cdr datum)))
@@ -517,7 +496,9 @@
                     ]
       [letrec-exp (proc-names idss bodiess letrec-bodies)
                   (letrec-exp proc-names idss (map (lambda (x) (map syntax-expand x)) bodiess) (map syntax-expand letrec-bodies))]
-      
+      [for-exp (index start end bodies)
+               (for-exp index start end (syntax-expand bodies))
+               ]
       [else
        exp]
       )))
@@ -632,6 +613,30 @@
                   (eval-bodies letrec-bodies
                                (extend-env-recursively 
                                 proc-names idss bodiess env))]
+      ;FOR-LOOP
+      [for-exp (index start end body)
+               ;;                (let loop ([start start] [end end] [index index])
+               ;;                  (if (< start end)
+               ;;                      (eval-exp body env)                  
+               ;;                      (loop (add1 start) end))
+               ;;                  )
+               ;                (lambda (test)
+               ;			(eval-bodies start env)
+               ;			(if (eval-exp test env)
+               ;				(eval-bodies (append bodies update (list
+               ;					;; we've already done init
+               ;					(for-exp '() test update bodies))) env)
+               ;				(eval-bodies bodies env)))
+               (let loop ([lifted-index start])
+                 ;set the variable represented by "index" to the value of lifted index
+                 ;keep going until index is the last value
+                 (let ([new-env (extend-env (list index) (list lifted-index) env)])
+                   (eval-exp body new-env)
+                   (when (< index end)
+                     (loop (add1 index))
+                     )
+                   ))
+               ]
 
       [app-exp (rator rands)
                (let ([proc-value (eval-exp rator env)]
@@ -686,7 +691,7 @@
 (define *prim-proc-names* '(+ - * add1 sub1 cons = / not zero? >= car cdr list null? eq? eqv? equal?
                               length list->vector list? pair? vector->list append list-tail
                               vector? number? symbol? caar cadr cadar procedure? vector vector-ref vector-set!
-                              map apply < > quotient negative? positive?))
+                              map apply < > quotient negative? positive? set-mcar! displayln))
 
 (define init-env         ; for now, our initial global environment only contains 
   (extend-env            ; procedure names.  Recall that an environment associates
@@ -745,6 +750,8 @@
       [(procedure?) (proc-val? (1st args))]
       [(map) (map1 (1st args) (cadr args))]
       [(apply) (apply-proc (1st args) (2nd args))]
+      [(set-mcar!) (set-mcar! (1st args) (2nd args))]
+      [(displayln) (displayln (1st args))]
       [else (error 'apply-prim-proc 
                    "Bad primitive procedure name: ~s" 
                    prim-proc)])))
