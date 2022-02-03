@@ -1,4 +1,4 @@
-#lang racket
+d#lang racket
 
 (require "chez-init.rkt")
 
@@ -14,7 +14,7 @@
    (ls list?)
    (k continuation?)]
   [flatten-car-k
-   (flattened-cdr list?)
+   (flattened-cdr list?) 
    (k continuation?)]
    
   )
@@ -26,7 +26,7 @@
 	(flatten-cps (cdr ls) (flatten-cdr-k ls k)))))
 
 
-(define apply-k
+(define apply-kfasdasdad
   (lambda (k v)
 ;    (if (procedure? k)
 ;	(k v)
