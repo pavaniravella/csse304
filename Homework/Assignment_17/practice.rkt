@@ -1,0 +1,20 @@
+#lang racket
+(define strange2
+  (lambda (x)
+    (displayln "before 1")
+    (displayln 1)
+  (displayln "after 1")
+      (displayln "before call/cc 1st")
+    (call/cc x)
+ 
+ (displayln "before 2")
+    (displayln 2)
+(displayln "after 2")
+(displayln "before call/cc 2nd")
+  (call/cc x)
+(displayln "after call/cc 2nd")
+    (displayln "before 3")
+    (displayln 3)
+    (displayln "after 3")
+    ))
+(strange2 (call/cc (lambda (k) k)))

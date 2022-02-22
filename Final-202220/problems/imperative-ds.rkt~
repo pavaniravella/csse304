@@ -1,0 +1,31 @@
+#lang racket
+(require "../chez-init.rkt")
+(define-datatype continuation continuation?
+  [init-k]
+  [qsort-more-k (pivot number?) (sorted-less list?) (k continuation?)]
+  [qsort-less-k (pivot number?) (more list?) (k continuation?)]
+
+  )
+  
+(define apply-k
+  (lambda (k v)
+    (cases continuation k
+      [qsort-less-k (pivot more k)
+                    (qsort-cps more (qsort-more-k pivot v k))]
+      [qsort-more-k (pivot sorted-less k)
+                    (apply-k k (append sorted-less (list pivot) v))]
+      [init-k () v])))
+  
+(define qsort-cps
+  (lambda (lst k)
+    (if (null? lst)
+        (apply-k k lst)
+        (qsort-helper-cps (cdr lst) (car lst) '() '() k))))
+  
+(define qsort-helper-cps
+  (lambda (in pivot less more k)
+    (if (null? in)
+        (qsort-cps less (qsort-less-k pivot more k))
+        (if (< (car in) pivot)
+            (qsort-helper-cps (cdr in) pivot (cons (car in) less) more k)
+            (qsort-helper-cps (cdr in) pivot less (cons (car in) more) k)))))
